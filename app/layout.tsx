@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 //import Script from "next/script"
 import "./globals.css"
 import { LinksProvider } from "@/hooks/use-links"
+import { Analytics } from "@vercel/analytics/next"
 import "@/lib/google-auth"
 
 const inter = Inter({ subsets: ["latin"] })
