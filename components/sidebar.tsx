@@ -33,7 +33,6 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu"
   import { useAuth } from "@/hooks/use-auth"
@@ -41,7 +40,6 @@ import {
   import { User as UserType } from "@/lib/supabase/types"
   import Link from "next/link"
   import { useRouter } from "next/navigation"
-  import Toast from "./toast-notification"
   import { showErrorToast } from "@/lib/utils"
 
 function AppSidebar() {
@@ -77,7 +75,7 @@ function AppSidebar() {
                     }
                 } catch (error) {
                     console.error('Error fetching user data:', error)
-                    const errorMessage = showErrorToast(error, 'Failed to fetch user data')
+                    showErrorToast(error, 'Failed to fetch user data')
                     // Fallback to auth user metadata
                     setUserData({
                         id: user.id,
@@ -118,7 +116,7 @@ function AppSidebar() {
             router.push('/auth')
         } catch (error) {
             console.error('Error logging out:', error)
-            const errorMessage = showErrorToast(error, 'Failed to log out')
+            showErrorToast(error, 'Failed to log out')
             // Note: We don't show a toast here as the user is being redirected
         }
     }

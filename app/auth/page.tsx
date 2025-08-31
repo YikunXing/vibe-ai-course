@@ -2,14 +2,13 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
-import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Script from "next/script"
 import { showErrorToast } from "@/lib/utils"
@@ -27,7 +26,7 @@ export default function MagicLinkAuth() {
     const supabase = createClient()
     
     try {
-      const { data, error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
           shouldCreateUser: true,
@@ -36,11 +35,11 @@ export default function MagicLinkAuth() {
         },
       })
 
-      return { data, error }
+      return { error }
     } catch (err) {
       console.error('Supabase auth error:', err)
       const errorMessage = showErrorToast(err, 'Authentication error occurred')
-      return { data: null, error: { message: errorMessage } as any }
+      return { error: { message: errorMessage } }
     }
   }
 
@@ -58,7 +57,7 @@ export default function MagicLinkAuth() {
     setIsLoading(true)
 
     try {
-      const { data, error } = await signInWithEmail(email)
+      const { error } = await signInWithEmail(email)
 
       if (error) {
         toast.error("Failed to send magic link", {
@@ -70,7 +69,7 @@ export default function MagicLinkAuth() {
         })
         setIsSubmitted(true)
       }
-    } catch (err) {
+    } catch {
       toast.error("An unexpected error occurred", {
         description: "Please try again later.",
       })
@@ -82,9 +81,10 @@ export default function MagicLinkAuth() {
   const supabase = createClient()
   const router = useRouter()
 
-  async function handleSignInWithGoogle(response: any) {
+  // This function needs to be available globally for Google's script to call
+  const handleSignInWithGoogle = useCallback(async (response: { credential: string }) => {
     try {
-      const { data, error } = await supabase.auth.signInWithIdToken({
+      const { error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: response.credential,
       })
@@ -95,7 +95,6 @@ export default function MagicLinkAuth() {
           description: errorMessage,
         })
       } else {
-        //window.location.href = '/'
         router.push('/')
       }
     } catch (err) {
@@ -105,11 +104,13 @@ export default function MagicLinkAuth() {
         description: errorMessage,
       })
     }
-  }
+  }, [supabase, router])
 
-  useEffect(()=>{
+  useEffect(() => {
+    // Make the function available globally for Google's script
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).handleSignInWithGoogle = handleSignInWithGoogle
-  }, [])
+  }, [handleSignInWithGoogle])
 
   if (isSubmitted) {
     return (
@@ -126,13 +127,13 @@ export default function MagicLinkAuth() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    d="M3 8l7.89 4.26a2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                   />
                 </svg>
               </div>
               <h2 className="text-xl font-semibold text-white">Check your email</h2>
               <p className="text-sm" style={{ color: "#BCBCBC" }}>
-                We've sent a magic link to <span className="text-white">{email}</span>. Click the link in your email to
+                We&apos;ve sent a magic link to <span className="text-white">{email}</span>. Click the link in your email to
                 sign in.
               </p>
               <Button

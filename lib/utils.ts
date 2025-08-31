@@ -14,7 +14,7 @@ export const showErrorToast = (error: unknown, defaultMessage: string = 'An erro
   } else if (typeof error === 'string') {
     message = error
   } else if (error && typeof error === 'object' && 'message' in error) {
-    message = String((error as any).message)
+    message = String((error as { message: string }).message)
   }
   
   // Return error message for components to use with their toast system

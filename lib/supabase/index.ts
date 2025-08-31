@@ -28,7 +28,6 @@ export {
   getAnalytics,
   
   // Additional utilities
-  getUserLinks,
   getLinkAnalytics,
   getLinksWithClickCounts,
 } from './helpers';

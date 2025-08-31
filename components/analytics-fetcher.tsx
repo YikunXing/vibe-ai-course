@@ -6,9 +6,15 @@ import ClicksChart from "@/components/clicks-chart";
 import Toast from "./toast-notification";
 import { showErrorToast } from "@/lib/utils";
 
+interface AnalyticsData {
+  id: string;
+  clicked_at: string;
+  link_id: string;
+}
+
 export default function AnalyticsFetcher() {
   const supabase = createClient();
-  const [analytics, setAnalytics] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showErrorToastState, setShowErrorToastState] = useState(false);

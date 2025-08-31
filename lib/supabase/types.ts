@@ -11,7 +11,7 @@ export interface Link {
   user_id: string;
   destination_url?: string;
   slug?: string;
-  tags?: any; // JSON field
+  tags?: string[]; // JSON field
   conversion_tracking?: boolean;
   folder?: string;
   description?: string;
@@ -27,7 +27,7 @@ export interface CreateLinkData {
   user_id: string;
   destination_url: string;
   slug: string;
-  tags?: any;
+  tags?: string[];
   conversion_tracking?: boolean;
   folder?: string;
   description?: string;
@@ -41,7 +41,7 @@ export interface UpdateUserData {
 export interface UpdateLinkData {
   destination_url?: string;
   slug?: string;
-  tags?: any;
+  tags?: string[];
   conversion_tracking?: boolean;
   folder?: string;
   description?: string;

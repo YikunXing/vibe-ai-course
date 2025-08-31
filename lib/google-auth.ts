@@ -1,6 +1,10 @@
 import { createClient } from '@/lib/supabase/client'
 
-export async function handleSignInWithGoogle(response: any) {
+interface GoogleSignInResponse {
+  credential: string
+}
+
+export async function handleSignInWithGoogle(response: GoogleSignInResponse) {
   const supabase = createClient()
   const { data, error } = await supabase.auth.signInWithIdToken({
     provider: 'google',

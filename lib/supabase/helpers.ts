@@ -196,7 +196,7 @@ export const getAnalytics = async (
 
       // Step 3: Map the counts back to the links for the final result.
       const clickCountsMap = new Map<string, number>(
-        counts.map((c: any) => [c.link_id, c.click_count])
+        counts.map((c: { link_id: string; click_count: number }) => [c.link_id, c.click_count])
       );
 
       return links.map((link) => ({

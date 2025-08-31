@@ -6,6 +6,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AnalyticsFetcher from "@/components/analytics-fetcher"; // 👈 new client component
 
+// Force dynamic rendering since we use server-side auth
+export const dynamic = 'force-dynamic'
+
 export default async function AnalyticsPage() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();

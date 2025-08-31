@@ -126,7 +126,7 @@ export function LinkDashboard() {
     title: '',
     description: ''
   })
-  const { links, addLink, fetchUserLinks, forceRefreshLinks, isLoading, isConnecting, hasInitialized, error, isRealtimeConnected } = useLinks()
+  const { links, fetchUserLinks, forceRefreshLinks, isLoading, isConnecting, hasInitialized, error, isRealtimeConnected } = useLinks()
   const { user, loading: authLoading } = useAuth()
 
   // Fetch user links when component mounts and user is authenticated
@@ -166,20 +166,6 @@ export function LinkDashboard() {
       
       if (!createdLink) {
         throw new Error("Failed to create link in database")
-      }
-      
-      // Create local link for UI (matching the local Link interface)
-      const newLink: Omit<UILink, 'id'> = {
-        favicon: "/placeholder.svg?height=24&width=24",
-        shortUrl: newLinkData.shortUrl,
-        originalUrl: newLinkData.destinationUrl,
-        description: newLinkData.description,
-        clicks: 0,
-        createdAt: "Just now",
-        isActive: true,
-        tags: newLinkData.tags,
-        folder: "links",
-        conversionTracking: false,
       }
       
       // Refresh the links list to show the newly created link
