@@ -13,11 +13,11 @@ export async function GET(
     }
 
     // Query the database for the link with this slug
-    const link = await getLinkFromSlug(slug);
+    const link = await getLinkFromSlug(slug)
     
     if (!link || !link.destination_url) {
       // If no link found or no destination URL, return 404
-      return NextResponse.json({ error: 'Link not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Link not found' }, { status: 404 })
     }
 
     // Record the click in analytics
@@ -27,7 +27,7 @@ export async function GET(
     return NextResponse.redirect(link.destination_url);
     
   } catch (error) {
-    console.error('Error in slug route:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error in slug route:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
