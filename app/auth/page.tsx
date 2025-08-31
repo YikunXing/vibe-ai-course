@@ -21,7 +21,7 @@ export default function MagicLinkAuth() {
 
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
+  
   const signInWithEmail = async (email: string) => {
     const supabase = createClient()
     
