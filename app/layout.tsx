@@ -1,10 +1,9 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-//import Script from "next/script"
 import "./globals.css"
 import { LinksProvider } from "@/hooks/use-links"
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from '@vercel/analytics/next';
 import "@/lib/google-auth"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -24,6 +23,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-[#090909]`}>
         <LinksProvider>
           {children}
+          <Analytics />
         </LinksProvider>
       </body>
     </html>
