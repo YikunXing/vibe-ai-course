@@ -5,6 +5,7 @@ import "./globals.css"
 import { LinksProvider } from "@/hooks/use-links"
 import { Analytics } from '@vercel/analytics/next';
 import "@/lib/google-auth"
+import Script from "next/script"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,6 +21,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <Script async src="https://www.googletagmanager.com/gtag/js?id=G-RM7619BEJV"></Script>
+        <Script>
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments)}
+            gtag('js', new Date());
+            gtag('config', 'G-RM7619BEJV');
+          `}
+        </Script>
+      </head>
       <body className={`${inter.className} bg-[#090909]`}>
         <LinksProvider>
           {children}
