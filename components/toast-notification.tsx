@@ -37,8 +37,6 @@ const Toast = React.memo(({
     }
   }, [autoClose, duration, handleClose])
 
-  if (!isVisible) return null
-
   const isSuccess = type === 'success'
   const iconBgColor = useMemo(() => isSuccess ? '#1DC91D' : '#DC2626', [isSuccess])
 
@@ -66,6 +64,8 @@ const Toast = React.memo(({
       {iconContent}
     </div>
   ), [iconContent])
+
+  if (!isVisible) return null
 
   return (
     <div 
