@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { LinksProvider } from "@/hooks/use-links"
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import GoogleAnalytics from "@/components/google-analytics"
 import "@/lib/google-auth"
 
@@ -25,6 +26,7 @@ export default function RootLayout({
         <LinksProvider>
           {children}
           <Analytics />
+          <SpeedInsights />
           <GoogleAnalytics />
         </LinksProvider>
       </body>
