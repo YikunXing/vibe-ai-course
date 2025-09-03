@@ -35,7 +35,7 @@ const buttonVariants = cva(
   }
 )
 
-function Button({
+const Button = React.memo(({
   className,
   variant,
   size,
@@ -44,7 +44,7 @@ function Button({
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
-  }) {
+  }) => {
   const Comp = asChild ? Slot : "button"
 
   return (
@@ -54,6 +54,8 @@ function Button({
       {...props}
     />
   )
-}
+})
+
+Button.displayName = 'Button'
 
 export { Button, buttonVariants }

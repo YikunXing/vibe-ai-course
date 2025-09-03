@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client"; // client-side supabase
 import ClicksChart from "@/components/clicks-chart";
 import Toast from "./toast-notification";
@@ -12,7 +12,7 @@ interface AnalyticsData {
   link_id: string;
 }
 
-export default function AnalyticsFetcher() {
+const AnalyticsFetcher = React.memo(() => {
   const supabase = createClient();
   const [analytics, setAnalytics] = useState<AnalyticsData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,34 +48,36 @@ export default function AnalyticsFetcher() {
     fetchAnalytics();
   }, [supabase]);
 
-  const handleCloseErrorToast = () => {
+  const handleCloseErrorToast = useCallback(() => {
     setShowErrorToastState(false);
     setError(null);
-  };
+  }, []);
+
+  // Memoize expensive calculations
+  const totalClicks = useMemo(() => analytics.length, [analytics.length]);
+
+  const chartData = useMemo(() => {
+    // Example: build chart data for last 30 days
+    const now = new Date();
+    return Array.from({ length: 30 }, (_, i) => {
+      const dayStart = new Date(now);
+      dayStart.setDate(now.getDate() - (29 - i));
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const clicks = analytics.filter(record => {
+        const clickTime = new Date(record.clicked_at);
+        return clickTime >= dayStart && clickTime <= dayEnd;
+      }).length;
+
+      return { period: `${i + 1}`, clicks };
+    });
+  }, [analytics]);
 
   if (loading) {
     return <p className="text-gray-400">Loading analytics...</p>;
   }
-
-  // Example: calculate total clicks
-  const totalClicks = analytics.length;
-
-  // Example: build chart data for last 30 days
-  const now = new Date();
-  const chartData = Array.from({ length: 30 }, (_, i) => {
-    const dayStart = new Date(now);
-    dayStart.setDate(now.getDate() - (29 - i));
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    const clicks = analytics.filter(record => {
-      const clickTime = new Date(record.clicked_at);
-      return clickTime >= dayStart && clickTime <= dayEnd;
-    }).length;
-
-    return { period: `${i + 1}`, clicks };
-  });
 
   return (
     <>
@@ -90,4 +92,8 @@ export default function AnalyticsFetcher() {
       )}
     </>
   );
-}
+});
+
+AnalyticsFetcher.displayName = 'AnalyticsFetcher'
+
+export default AnalyticsFetcher;

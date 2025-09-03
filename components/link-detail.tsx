@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import {
   Copy,
   MoreHorizontal,
@@ -86,7 +86,7 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
     }
   }, [link])
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (link) {
       try {
         // Parse tags from comma-separated string to array, filtering out empty tags
@@ -136,11 +136,89 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
         })
       }
     }
-  }
+  }, [link, formData, linkId, updateLinkInDatabase, router])
 
-  const handleCloseToast = () => {
+  const handleCloseToast = useCallback(() => {
     setToast(prev => ({ ...prev, show: false }))
-  }
+  }, [])
+
+  const handleInputChange = useCallback((field: keyof typeof formData, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }, [])
+
+  const handleFolderChange = useCallback((value: string) => {
+    setFormData(prev => ({ ...prev, folder: value }))
+  }, [])
+
+  // Memoize expensive calculations and static content
+  const featureChips = useMemo(() => (
+    <div className="flex items-center gap-3">
+      <Badge variant="outline" className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800">
+        <Link className="h-3 w-3 mr-1" />
+        UTM
+      </Badge>
+      <Badge variant="outline" className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800">
+        <Target className="h-3 w-3 mr-1" />
+        Targeting
+      </Badge>
+      <Badge variant="outline" className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800">
+        <Calendar className="h-3 w-3 mr-1" />
+        Expiration
+      </Badge>
+      <Badge variant="outline" className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800">
+        <Lock className="h-3 w-3 mr-1" />
+        Password
+      </Badge>
+    </div>
+  ), [])
+
+  const breadcrumbContent = useMemo(() => (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/" className="text-gray-400 hover:text-white">
+            Links
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator className="text-gray-600" />
+        <BreadcrumbItem>
+          <BreadcrumbPage className="text-white">{link?.shortUrl}</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  ), [link?.shortUrl])
+
+  const headerActions = useMemo(() => (
+    <div className="ml-auto flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 bg-transparent"
+      >
+        <Copy className="h-4 w-4 mr-2" />
+        Copy link
+      </Button>
+      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+        <MoreHorizontal className="h-4 w-4" />
+      </Button>
+    </div>
+  ), [])
+
+  const folderSelectContent = useMemo(() => (
+    <SelectContent className="bg-gray-900 border-gray-800">
+      <SelectItem value="links" className="text-gray-300 hover:text-white">
+        <div className="flex items-center gap-2">
+          <div
+            className="h-4 w-4 rounded flex items-center justify-center"
+            style={{ backgroundColor: "#1c2b1c" }}
+          >
+            <FolderOpen className="h-3 w-3" style={{ color: "#04C40A" }} />
+          </div>
+          Links
+        </div>
+      </SelectItem>
+    </SelectContent>
+  ), [])
 
   if (!link) {
     return (
@@ -159,33 +237,9 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
             <SidebarTrigger className="-ml-1 text-gray-400 hover:text-white" />
             <Separator orientation="vertical" className="mr-2 h-4 bg-gray-800" />
 
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/" className="text-gray-400 hover:text-white">
-                    Links
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="text-gray-600" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="text-white">{link.shortUrl}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+            {breadcrumbContent}
 
-            <div className="ml-auto flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 bg-transparent"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copy link
-              </Button>
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </div>
+            {headerActions}
           </header>
 
           <div className="mx-auto flex flex-1 flex-col gap-6 p-6 w-[600px]">
@@ -200,7 +254,7 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
                 className="border text-white placeholder-gray-400 focus:border-blue-500"
                 style={{ backgroundColor: "transparent", borderColor: "#2E2E2E" }}
                 value={formData.originalUrl}
-                onChange={(e) => setFormData(prev => ({ ...prev, originalUrl: e.target.value }))}
+                onChange={(e) => handleInputChange("originalUrl", e.target.value)}
               />
             </div>
 
@@ -228,7 +282,7 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
                 </Select>
                 <Input
                   value={formData.shortUrl}
-                  onChange={(e) => setFormData(prev => ({ ...prev, shortUrl: e.target.value }))}
+                  onChange={(e) => handleInputChange("shortUrl", e.target.value)}
                   className="rounded-l-none border text-white focus:border-blue-500"
                   style={{ backgroundColor: "transparent", borderColor: "#2E2E2E" }}
                 />
@@ -248,7 +302,7 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
                   className="pl-10 border text-white placeholder-gray-400 focus:border-blue-500"
                   style={{ backgroundColor: "transparent", borderColor: "#2E2E2E" }}
                   value={formData.tags}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+                  onChange={(e) => handleInputChange("tags", e.target.value)}
                 />
               </div>
             </div>
@@ -261,7 +315,7 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
               </div>
               <Switch 
                 checked={formData.conversionTracking}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, conversionTracking: checked }))}
+                onCheckedChange={(checked) => handleInputChange("conversionTracking", checked)}
               />
             </div>
 
@@ -273,7 +327,7 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
                 <label className="text-sm font-medium text-white">Folder</label>
                 <QuestionIcon className="h-4 w-4 text-gray-400" />
               </div>
-              <Select value={formData.folder} onValueChange={(value) => setFormData(prev => ({ ...prev, folder: value }))}>
+              <Select value={formData.folder} onValueChange={handleFolderChange}>
                 <SelectTrigger
                   className="border text-white"
                   style={{ backgroundColor: "transparent", borderColor: "#2E2E2E" }}
@@ -288,19 +342,7 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
                     <SelectValue />
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-800">
-                  <SelectItem value="links" className="text-gray-300 hover:text-white">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-4 w-4 rounded flex items-center justify-center"
-                        style={{ backgroundColor: "#1c2b1c" }}
-                      >
-                        <FolderOpen className="h-3 w-3" style={{ color: "#04C40A" }} />
-                      </div>
-                      Links
-                    </div>
-                  </SelectItem>
-                </SelectContent>
+                {folderSelectContent}
               </Select>
             </div>
 
@@ -313,29 +355,12 @@ export function LinkDetail({ linkId }: LinkDetailProps) {
                 style={{ backgroundColor: "transparent", borderColor: "#2E2E2E" }}
                 rows={3}
                 value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) => handleInputChange("description", e.target.value)}
               />
             </div>
 
             {/* Feature Chips */}
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800">
-                <Link className="h-3 w-3 mr-1" />
-                UTM
-              </Badge>
-              <Badge variant="outline" className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800">
-                <Target className="h-3 w-3 mr-1" />
-                Targeting
-              </Badge>
-              <Badge variant="outline" className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800">
-                <Calendar className="h-3 w-3 mr-1" />
-                Expiration
-              </Badge>
-              <Badge variant="outline" className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800">
-                <Lock className="h-3 w-3 mr-1" />
-                Password
-              </Badge>
-            </div>
+            {featureChips}
 
             <Separator style={{ backgroundColor: "#2E2E2E" }} />
 

@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import {
     Sidebar,
     SidebarContent,
@@ -42,7 +42,7 @@ import {
   import { useRouter } from "next/navigation"
   import { showErrorToast } from "@/lib/utils"
 
-function AppSidebar() {
+const AppSidebar = React.memo(() => {
     const { user } = useAuth()
     const [userData, setUserData] = useState<UserType | null>(null)
     const [loading, setLoading] = useState(true)
@@ -95,7 +95,7 @@ function AppSidebar() {
     }, [user?.id, user?.created_at, user?.email, user?.user_metadata])
 
     // Get initials from user's name or fallback to email
-    const getInitials = () => {
+    const getInitials = useCallback(() => {
         if (userData?.name) {
             const nameParts = userData.name.trim().split(' ')
             if (nameParts.length >= 2) {
@@ -107,9 +107,9 @@ function AppSidebar() {
             return userData.email.substring(0, 2).toUpperCase()
         }
         return 'U'
-    }
+    }, [userData?.name, userData?.email])
 
-    const handleLogout = async () => {
+    const handleLogout = useCallback(async () => {
         try {
             const supabase = createClient()
             await supabase.auth.signOut()
@@ -119,7 +119,129 @@ function AppSidebar() {
             showErrorToast(error, 'Failed to log out')
             // Note: We don't show a toast here as the user is being redirected
         }
-    }
+    }, [router])
+
+    // Memoize expensive calculations and static content
+    const userInitials = useMemo(() => getInitials(), [getInitials])
+
+    const userDropdownContent = useMemo(() => (
+        <DropdownMenuContent 
+            className="w-56 bg-gray-900 border-gray-700 text-white"
+            align="start"
+            sideOffset={8}
+        >
+            <DropdownMenuItem 
+                className="text-red-400 hover:text-red-300 hover:bg-gray-800 cursor-pointer"
+                onClick={handleLogout}
+            >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign out
+            </DropdownMenuItem>
+        </DropdownMenuContent>
+    ), [handleLogout])
+
+    const userInfo = useMemo(() => (
+        <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">{userInitials}</span>
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+                {loading ? (
+                    <>
+                        <div className="h-4 bg-gray-700 rounded animate-pulse mb-1"></div>
+                        <div className="h-3 bg-gray-700 rounded animate-pulse"></div>
+                    </>
+                ) : (
+                    <>
+                        <p className="text-sm font-medium text-white truncate">
+                            {userData?.name || 'User'}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">
+                            {userData?.email || 'No email'}
+                        </p>
+                    </>
+                )}
+            </div>
+        </div>
+    ), [userInitials, loading, userData?.name, userData?.email])
+
+    const mainMenuItems = useMemo(() => (
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive>
+                    <Link href="/" className="text-white">
+                        <Home className="h-4 w-4" />
+                        <span>Home</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                    <Link href="/analytics" className="text-gray-300 hover:text-white">
+                        <BarChart3 className="h-4 w-4" />
+                        <span>Analytics</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                    <a href="#" className="text-gray-300 hover:text-white">
+                        <Users className="h-4 w-4" />
+                        <span>Customers</span>
+                    </a>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
+    ), [])
+
+    const secondaryMenuItems = useMemo(() => (
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                    <a href="#" className="text-gray-300 hover:text-white">
+                        <Handshake className="h-4 w-4" />
+                        <span>Partners</span>
+                        <Badge
+                            variant="secondary"
+                            className="ml-auto text-xs"
+                            style={{ backgroundColor: "#1c2b1c", color: "#04C40A" }}
+                        >
+                            new
+                        </Badge>
+                    </a>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                    <a href="#" className="text-gray-300 hover:text-white">
+                        <CreditCard className="h-4 w-4" />
+                        <span>Payouts</span>
+                    </a>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
+    ), [])
+
+    const footerMenuItems = useMemo(() => (
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                    <a href="#" className="text-gray-300 hover:text-white">
+                        <Settings className="h-4 w-4" />
+                        <span>Settings</span>
+                    </a>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                    <a href="#" className="text-gray-300 hover:text-white">
+                        <HelpCircle className="h-4 w-4" />
+                        <span>Help centre</span>
+                    </a>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
+    ), [])
 
     return (
       <Sidebar className="border-r border-gray-800" style={{ backgroundColor: "#101011" }}>
@@ -130,44 +252,11 @@ function AppSidebar() {
                 variant="ghost" 
                 className="w-full justify-between text-white hover:text-white hover:bg-gray-800 p-0 h-auto"
               >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">{getInitials()}</span>
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    {loading ? (
-                      <>
-                        <div className="h-4 bg-gray-700 rounded animate-pulse mb-1"></div>
-                        <div className="h-3 bg-gray-700 rounded animate-pulse"></div>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm font-medium text-white truncate">
-                          {userData?.name || 'User'}
-                        </p>
-                        <p className="text-xs text-gray-400 truncate">
-                          {userData?.email || 'No email'}
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
+                {userInfo}
                 <ChevronDown className="h-4 w-4 text-gray-400 ml-2" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              className="w-56 bg-gray-900 border-gray-700 text-white"
-              align="start"
-              sideOffset={8}
-            >
-              <DropdownMenuItem 
-                className="text-red-400 hover:text-red-300 hover:bg-gray-800 cursor-pointer"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+            {userDropdownContent}
           </DropdownMenu>
           
           <div className="mt-3">
@@ -183,32 +272,7 @@ function AppSidebar() {
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive>
-                    <Link href="/" className="text-white">
-                      <Home className="h-4 w-4" />
-                      <span>Home</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/analytics" className="text-gray-300 hover:text-white">
-                      <BarChart3 className="h-4 w-4" />
-                      <span>Analytics</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <a href="#" className="text-gray-300 hover:text-white">
-                      <Users className="h-4 w-4" />
-                      <span>Customers</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
+              {mainMenuItems}
             </SidebarGroupContent>
           </SidebarGroup>
   
@@ -216,57 +280,18 @@ function AppSidebar() {
   
           <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <a href="#" className="text-gray-300 hover:text-white">
-                      <Handshake className="h-4 w-4" />
-                      <span>Partners</span>
-                      <Badge
-                        variant="secondary"
-                        className="ml-auto text-xs"
-                        style={{ backgroundColor: "#1c2b1c", color: "#04C40A" }}
-                      >
-                        new
-                      </Badge>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <a href="#" className="text-gray-300 hover:text-white">
-                      <CreditCard className="h-4 w-4" />
-                      <span>Payouts</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
+              {secondaryMenuItems}
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
   
         <SidebarFooter className="p-4">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#" className="text-gray-300 hover:text-white">
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#" className="text-gray-300 hover:text-white">
-                  <HelpCircle className="h-4 w-4" />
-                  <span>Help centre</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+          {footerMenuItems}
         </SidebarFooter>
       </Sidebar>
     )
-  }
+  })
+
+AppSidebar.displayName = 'AppSidebar'
 
 export default AppSidebar;

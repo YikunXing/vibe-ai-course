@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import {
   ChevronDown,
   Plus,
@@ -33,23 +33,31 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { recordLinkClick } from "@/lib/supabase/helpers"
 import { showErrorToast } from "@/lib/utils"
 
-function LinkCard({ link }: { link: UILink }) {
+const LinkCard = React.memo(({ link }: { link: UILink }) => {
   const router = useRouter()
   
-  const handleTestClick = async (e: React.MouseEvent) => {
+  const handleTestClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation()
     try {
       await recordLinkClick(link.id)
     } catch (error) {
       console.error('Error recording test click:', error)
     }
-  }
+  }, [link.id])
+  
+  const handleCardClick = useCallback(() => {
+    router.push(`/link/${link.id}`)
+  }, [router, link.id])
+  
+  const handleCopyClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+  }, [])
   
   return (
     <Card
       className="p-4 border hover:bg-gray-800/10 transition-colors cursor-pointer"
       style={{ backgroundColor: "transparent", borderColor: "#2E2E2E" }}
-      onClick={() => router.push(`/link/${link.id}`)}
+      onClick={handleCardClick}
     >
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0">
@@ -63,7 +71,7 @@ function LinkCard({ link }: { link: UILink }) {
               variant="ghost"
               size="sm"
               className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-              onClick={(e) => e.stopPropagation()}
+              onClick={handleCopyClick}
             >
               <Copy className="h-3 w-3" />
             </Button>
@@ -92,9 +100,11 @@ function LinkCard({ link }: { link: UILink }) {
       </div>
     </Card>
   )
-}
+})
 
-function LinkSkeleton() {
+LinkCard.displayName = 'LinkCard'
+
+const LinkSkeleton = React.memo(() => {
   return (
     <Card className="p-4 border" style={{ backgroundColor: "transparent", borderColor: "#2E2E2E" }}>
       <div className="flex items-center gap-4">
@@ -111,7 +121,9 @@ function LinkSkeleton() {
       </div>
     </Card>
   )
-}
+})
+
+LinkSkeleton.displayName = 'LinkSkeleton'
 
 export function LinkDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -136,7 +148,7 @@ export function LinkDashboard() {
     }
   }, [user, authLoading, fetchUserLinks])
 
-  const handleCreateLink = async (newLinkData: {
+  const handleCreateLink = useCallback(async (newLinkData: {
     destinationUrl: string
     shortUrl: string
     description: string
@@ -190,20 +202,77 @@ export function LinkDashboard() {
           description: errorMessage
         })
       }
-  }
+  }, [user?.id, forceRefreshLinks])
 
-  const handleModalError = (error: string) => {
+  const handleModalError = useCallback((error: string) => {
     setToast({
       show: true,
       type: 'error',
       title: 'Validation Error',
       description: error
     })
-  }
+  }, [])
 
-  const handleCloseToast = () => {
+  const handleCloseToast = useCallback(() => {
     setToast(prev => ({ ...prev, show: false }))
-  }
+  }, [])
+
+  const handleModalOpenChange = useCallback((open: boolean) => {
+    setIsModalOpen(open)
+  }, [])
+
+  const handleRetryClick = useCallback(() => {
+    if (user?.id) {
+      fetchUserLinks(user.id)
+    }
+  }, [user?.id, fetchUserLinks])
+
+  // Memoize expensive calculations
+  const skeletonArray = useMemo(() => [...Array(3)], [])
+  
+  const dropdownMenuContent = useMemo(() => (
+    <DropdownMenuContent className="bg-gray-900 border-gray-800">
+      <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-800">
+        All Links
+      </DropdownMenuItem>
+      <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-800">
+        Active Links
+      </DropdownMenuItem>
+      <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-800">
+        Inactive Links
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  ), [])
+
+  const featureButtons = useMemo(() => (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 bg-transparent"
+      >
+        <Filter className="h-4 w-4 mr-2" />
+        Display
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 bg-transparent"
+      >
+        <MoreHorizontal className="h-4 w-4 mr-2" />
+        Bulk actions
+      </Button>
+    </>
+  ), [])
+
+  const statusIndicator = useMemo(() => (
+    <div className="flex items-center gap-2 ml-4">
+      <div className={`h-2 w-2 rounded-full ${isRealtimeConnected ? 'bg-green-500' : 'bg-gray-500'}`} />
+      <span className="text-xs text-gray-400">
+        {isRealtimeConnected ? 'Live' : 'Offline'}
+      </span>
+    </div>
+  ), [isRealtimeConnected])
 
   return (
     <div className="min-h-screen text-white bg-[#090909]">
@@ -222,17 +291,7 @@ export function LinkDashboard() {
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-gray-900 border-gray-800">
-                  <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-800">
-                    All Links
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-800">
-                    Active Links
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-800">
-                    Inactive Links
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
+                {dropdownMenuContent}
               </DropdownMenu>
             </div>
 
@@ -254,28 +313,8 @@ export function LinkDashboard() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 bg-transparent"
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Display
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 bg-transparent"
-                >
-                  <MoreHorizontal className="h-4 w-4 mr-2" />
-                  Bulk actions
-                </Button>
-                <div className="flex items-center gap-2 ml-4">
-                  <div className={`h-2 w-2 rounded-full ${isRealtimeConnected ? 'bg-green-500' : 'bg-gray-500'}`} />
-                  <span className="text-xs text-gray-400">
-                    {isRealtimeConnected ? 'Live' : 'Offline'}
-                  </span>
-                </div>
+                {featureButtons}
+                {statusIndicator}
               </div>
 
               <div className="relative w-64">
@@ -291,7 +330,7 @@ export function LinkDashboard() {
             <div className="space-y-3">
               {authLoading ? (
                 <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
+                  {skeletonArray.map((_, i) => (
                     <LinkSkeleton key={i} />
                   ))}
                 </div>
@@ -312,7 +351,7 @@ export function LinkDashboard() {
                       </div>
                     </div>
                   ) : (
-                    [...Array(3)].map((_, i) => (
+                    skeletonArray.map((_, i) => (
                       <LinkSkeleton key={i} />
                     ))
                   )}
@@ -323,11 +362,7 @@ export function LinkDashboard() {
                     <div className="text-red-400 mb-2">Error loading links</div>
                     <div className="text-gray-500 text-sm mb-4">{error}</div>
                     <Button 
-                      onClick={() => {
-                        if (user?.id) {
-                          fetchUserLinks(user.id)
-                        }
-                      }}
+                      onClick={handleRetryClick}
                       className="text-white hover:bg-gray-700"
                       style={{ backgroundColor: "#1F1F1F" }}
                     >
@@ -337,7 +372,7 @@ export function LinkDashboard() {
                 </div>
               ) : isLoading ? (
                 <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
+                  {skeletonArray.map((_, i) => (
                     <LinkSkeleton key={i} />
                   ))}
                 </div>
@@ -358,7 +393,7 @@ export function LinkDashboard() {
         </SidebarInset>
       </SidebarProvider>
       
-      <LinkModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} onCreateLink={handleCreateLink} onError={handleModalError} />
+      <LinkModal isOpen={isModalOpen} onOpenChange={handleModalOpenChange} onCreateLink={handleCreateLink} onError={handleModalError} />
       
       {toast.show && (
         <Toast 

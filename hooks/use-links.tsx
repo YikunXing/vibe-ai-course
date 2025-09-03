@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, createContext, useContext, ReactNode, useEffect, useCallback } from 'react'
+import React, { useState, createContext, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react'
 import { Link as DatabaseLink } from '@/lib/supabase/types'
 import { getLinksWithClickCounts, updateLink as updateDatabaseLink } from '@/lib/supabase/helpers'
 import { useRealtime } from './use-realtime'
@@ -102,15 +102,15 @@ export function LinksProvider({ children }: { children: ReactNode }) {
     }
   }, [hasInitialized, links.length])
 
-  const updateLink = (id: string, updates: Partial<Link>) => {
+  const updateLink = useCallback((id: string, updates: Partial<Link>) => {
     setLinks(prevLinks =>
       prevLinks.map(link =>
         link.id === id ? { ...link, ...updates } : link
       )
     )
-  }
+  }, [])
 
-  const updateLinkInDatabase = async (id: string, updates: Partial<DatabaseLink>): Promise<boolean> => {
+  const updateLinkInDatabase = useCallback(async (id: string, updates: Partial<DatabaseLink>): Promise<boolean> => {
     try {
       const updatedLink = await updateDatabaseLink(id, updates)
       if (updatedLink) {
@@ -140,24 +140,24 @@ export function LinksProvider({ children }: { children: ReactNode }) {
       setError(errorMessage)
       return false
     }
-  }
+  }, [])
 
-  const addLink = (linkData: Omit<Link, 'id'>) => {
+  const addLink = useCallback((linkData: Omit<Link, 'id'>) => {
     const newLink: Link = {
       ...linkData,
       id: typeof crypto !== 'undefined' && (crypto as any).randomUUID ? (crypto as any).randomUUID() : String(Date.now()),
     }
     setLinks(prevLinks => [newLink, ...prevLinks])
-  }
+  }, [])
 
-  const addDatabaseLink = (dbLink: DatabaseLink, clicks: number = 0) => {
+  const addDatabaseLink = useCallback((dbLink: DatabaseLink, clicks: number = 0) => {
     const uiLink = convertDatabaseLinkToUI(dbLink, clicks)
     setLinks(prevLinks => [uiLink, ...prevLinks])
-  }
+  }, [])
 
-  const getLinkById = (id: string) => {
+  const getLinkById = useCallback((id: string) => {
     return links.find(link => link.id === id)
-  }
+  }, [links])
 
   const forceRefreshLinks = useCallback(async (userId: string) => {
     try {
@@ -209,22 +209,39 @@ export function LinksProvider({ children }: { children: ReactNode }) {
     }
   }, [links, updateLinkIds])
 
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({ 
+    links, 
+    updateLink, 
+    updateLinkInDatabase,
+    addLink, 
+    getLinkById, 
+    addDatabaseLink, 
+    fetchUserLinks,
+    forceRefreshLinks,
+    isLoading,
+    isConnecting,
+    hasInitialized,
+    error,
+    isRealtimeConnected: isSubscribed
+  }), [
+    links, 
+    updateLink, 
+    updateLinkInDatabase,
+    addLink, 
+    getLinkById, 
+    addDatabaseLink, 
+    fetchUserLinks,
+    forceRefreshLinks,
+    isLoading,
+    isConnecting,
+    hasInitialized,
+    error,
+    isSubscribed
+  ])
+
   return (
-    <LinksContext.Provider value={{ 
-      links, 
-      updateLink, 
-      updateLinkInDatabase,
-      addLink, 
-      getLinkById, 
-      addDatabaseLink, 
-      fetchUserLinks,
-      forceRefreshLinks,
-      isLoading,
-      isConnecting,
-      hasInitialized,
-      error,
-      isRealtimeConnected: isSubscribed
-    }}>
+    <LinksContext.Provider value={contextValue}>
       {children}
     </LinksContext.Provider>
   )

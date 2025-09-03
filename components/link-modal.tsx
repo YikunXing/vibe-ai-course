@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState, useMemo, useCallback } from "react"
 import { HelpCircle, RefreshCw, Tag, Folder, Zap, Target, Calendar, Lock, Plus } from 'lucide-react'
 
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,7 @@ interface LinkModalProps {
   onError?: (error: string) => void
 }
 
-export function LinkModal({ isOpen, onOpenChange, onCreateLink, onError }: LinkModalProps) {
+export const LinkModal = React.memo(({ isOpen, onOpenChange, onCreateLink, onError }: LinkModalProps) => {
   const [conversionTracking, setConversionTracking] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -36,23 +36,23 @@ export function LinkModal({ isOpen, onOpenChange, onCreateLink, onError }: LinkM
     folder: "links"
   })
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = useCallback((field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
-  }
+  }, [])
 
-  const generateRandomShortUrl = () => {
+  const generateRandomShortUrl = useCallback(() => {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     let result = ''
     for (let i = 0; i < 7; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length))
     }
     return result
-  }
+  }, [])
 
-  const handleCreateLink = async () => {
+  const handleCreateLink = useCallback(async () => {
     try {
       // Validate required fields
       if (!formData.destinationUrl.trim()) {
@@ -89,7 +89,54 @@ export function LinkModal({ isOpen, onOpenChange, onCreateLink, onError }: LinkM
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [formData, onCreateLink, onError, generateRandomShortUrl])
+
+  const handleRefreshClick = useCallback(() => {
+    handleInputChange("shortUrl", generateRandomShortUrl())
+  }, [handleInputChange, generateRandomShortUrl])
+
+  const handleCloseClick = useCallback(() => {
+    onOpenChange(false)
+  }, [onOpenChange])
+
+  // Memoize static content and expensive calculations
+  const featureChips = useMemo(() => (
+    <div className="flex gap-2 flex-wrap">
+      <Badge variant="secondary" className="flex items-center gap-1 bg-[#1F1F1F] text-white border-[#333333]">
+        <Zap className="h-3 w-3" />
+        UTM
+      </Badge>
+      <Badge variant="secondary" className="flex items-center gap-1 bg-[#1F1F1F] text-white border-[#333333]">
+        <Target className="h-3 w-3" />
+        Targeting
+      </Badge>
+      <Badge variant="secondary" className="flex items-center gap-1 bg-[#1F1F1F] text-white border-[#333333]">
+        <Calendar className="h-3 w-3" />
+        Expiration
+      </Badge>
+      <Badge variant="secondary" className="flex items-center gap-1 bg-[#1F1F1F] text-white border-[#333333]">
+        <Lock className="h-3 w-3" />
+        Password
+      </Badge>
+    </div>
+  ), [])
+
+  const domainSelectContent = useMemo(() => (
+    <SelectContent className="bg-[#101011] border-[#333333]">
+      <SelectItem value="links.sh" className="text-white focus:bg-[#1F1F1F]">links.sh</SelectItem>
+      <SelectItem value="localhost:3000" className="text-white focus:bg-[#1F1F1F]">localhost:3000</SelectItem>
+    </SelectContent>
+  ), [])
+
+  const folderSelectContent = useMemo(() => (
+    <SelectContent className="bg-[#101011] border-[#333333]">
+      <SelectItem value="links" className="text-white focus:bg-[#1F1F1F]">
+        <div className="flex items-center gap-2">
+          Links
+        </div>
+      </SelectItem>
+    </SelectContent>
+  ), [])
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -123,7 +170,7 @@ export function LinkModal({ isOpen, onOpenChange, onCreateLink, onError }: LinkM
                 <Label htmlFor="shortlink" className="text-white">Short Link</Label>
                 <RefreshCw 
                   className="h-4 w-4 text-[#BCBCBC] ml-auto cursor-pointer hover:text-white" 
-                  onClick={() => handleInputChange("shortUrl", generateRandomShortUrl())}
+                  onClick={handleRefreshClick}
                 />
               </div>
               <div className="flex">
@@ -131,10 +178,7 @@ export function LinkModal({ isOpen, onOpenChange, onCreateLink, onError }: LinkM
                   <SelectTrigger className="w-32 rounded-r-none border-r-0 bg-transparent border-[#333333] text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#101011] border-[#333333]">
-                    <SelectItem value="links.sh" className="text-white focus:bg-[#1F1F1F]">links.sh</SelectItem>
-                    <SelectItem value="localhost:3000" className="text-white focus:bg-[#1F1F1F]">localhost:3000</SelectItem>
-                  </SelectContent>
+                  {domainSelectContent}
                 </Select>
                 <Input
                   value={formData.shortUrl}
@@ -179,24 +223,7 @@ export function LinkModal({ isOpen, onOpenChange, onCreateLink, onError }: LinkM
             <div className="border-t border-[#333333]" />
 
             {/* Feature Chips */}
-            <div className="flex gap-2 flex-wrap">
-              <Badge variant="secondary" className="flex items-center gap-1 bg-[#1F1F1F] text-white border-[#333333]">
-                <Zap className="h-3 w-3" />
-                UTM
-              </Badge>
-              <Badge variant="secondary" className="flex items-center gap-1 bg-[#1F1F1F] text-white border-[#333333]">
-                <Target className="h-3 w-3" />
-                Targeting
-              </Badge>
-              <Badge variant="secondary" className="flex items-center gap-1 bg-[#1F1F1F] text-white border-[#333333]">
-                <Calendar className="h-3 w-3" />
-                Expiration
-              </Badge>
-              <Badge variant="secondary" className="flex items-center gap-1 bg-[#1F1F1F] text-white border-[#333333]">
-                <Lock className="h-3 w-3" />
-                Password
-              </Badge>
-            </div>
+            {featureChips}
           </div>
 
           {/* Vertical Divider */}
@@ -209,7 +236,7 @@ export function LinkModal({ isOpen, onOpenChange, onCreateLink, onError }: LinkM
               variant="ghost"
               size="icon"
               className="absolute top-4 right-4 h-6 w-6"
-              onClick={() => onOpenChange(false)}
+              onClick={handleCloseClick}
             >
             </Button>
 
@@ -228,13 +255,7 @@ export function LinkModal({ isOpen, onOpenChange, onCreateLink, onError }: LinkM
                     <SelectValue />
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-[#101011] border-[#333333]">
-                  <SelectItem value="links" className="text-white focus:bg-[#1F1F1F]">
-                    <div className="flex items-center gap-2">
-                      Links
-                    </div>
-                  </SelectItem>
-                </SelectContent>
+                {folderSelectContent}
               </Select>
             </div>
 
@@ -267,24 +288,26 @@ export function LinkModal({ isOpen, onOpenChange, onCreateLink, onError }: LinkM
       </DialogContent>
     </Dialog>
   )
-}
+})
+
+LinkModal.displayName = 'LinkModal'
 
 // Keep the original component for backward compatibility
 export default function Component() {
   const [isOpen, setIsOpen] = useState(false)
 
-  const handleCreateLink = async (newLinkData: {
+  const handleCreateLink = useCallback(async (newLinkData: {
     destinationUrl: string
     shortUrl: string
     description: string
     tags?: string
   }) => {
     console.log("New link created:", newLinkData)
-  }
+  }, [])
 
-  const handleError = (error: string) => {
+  const handleError = useCallback((error: string) => {
     console.error("Modal error:", error)
-  }
+  }, [])
 
   return (
     <div className="p-8">

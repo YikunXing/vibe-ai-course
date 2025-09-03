@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Check, X } from 'lucide-react'
 
 interface ToastProps {
@@ -12,14 +12,14 @@ interface ToastProps {
   duration?: number
 }
 
-export default function Toast({
+const Toast = React.memo(({
   type = 'success',
   title = 'Link Updated',
   description = 'Changes to the short link will take effect immediately',
   onClose,
   autoClose = true,
   duration = 3000
-}: ToastProps) {
+}: ToastProps) => {
   const [isVisible, setIsVisible] = useState(true)
 
   const handleClose = useCallback(() => {
@@ -40,7 +40,32 @@ export default function Toast({
   if (!isVisible) return null
 
   const isSuccess = type === 'success'
-  const iconBgColor = isSuccess ? '#1DC91D' : '#DC2626'
+  const iconBgColor = useMemo(() => isSuccess ? '#1DC91D' : '#DC2626', [isSuccess])
+
+  const iconContent = useMemo(() => (
+    <div 
+      className="w-5 h-5 rounded-full flex items-center justify-center"
+      style={{ backgroundColor: iconBgColor }}
+    >
+      {isSuccess ? (
+        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+      ) : (
+        <X className="w-3 h-3 text-white" strokeWidth={3} />
+      )}
+    </div>
+  ), [isSuccess, iconBgColor])
+
+  const iconContainer = useMemo(() => (
+    <div 
+      className="flex-shrink-0 p-2 rounded-md"
+      style={{ 
+        backgroundColor: '#28282B',
+        border: '1px solid #2E2E2E'
+      }}
+    >
+      {iconContent}
+    </div>
+  ), [iconContent])
 
   return (
     <div 
@@ -53,24 +78,7 @@ export default function Toast({
       }}
     >
       {/* Icon container */}
-      <div 
-        className="flex-shrink-0 p-2 rounded-md"
-        style={{ 
-          backgroundColor: '#28282B',
-          border: '1px solid #2E2E2E'
-        }}
-      >
-        <div 
-          className="w-5 h-5 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: iconBgColor }}
-        >
-          {isSuccess ? (
-            <Check className="w-3 h-3 text-white" strokeWidth={3} />
-          ) : (
-            <X className="w-3 h-3 text-white" strokeWidth={3} />
-          )}
-        </div>
-      </div>
+      {iconContainer}
 
       {/* Content */}
       <div className="flex-1 min-w-0">
@@ -92,4 +100,8 @@ export default function Toast({
       </button>
     </div>
   )
-}
+})
+
+Toast.displayName = 'Toast'
+
+export default Toast
